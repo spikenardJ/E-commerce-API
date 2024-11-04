@@ -1,4 +1,5 @@
 # Mini-Project: E-commerce API
+# Postman link: https://api.postman.com/collections/39172779-8eb450ff-aef5-4065-b9c7-474f57f66f0a?access_key=PMAT-01JBW4TPYTHDF1MMHJVCTQH18W
 
 # Task 1: Customer and CustomerAccount Management
 
