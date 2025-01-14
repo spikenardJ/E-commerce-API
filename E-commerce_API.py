@@ -49,12 +49,14 @@ class ProductSchema(ma.Schema):
 product_schema = ProductSchema()
 products_schema = ProductSchema(many=True)
 
-# class OrderProductSchema(ma.Schema):
-#     product_id = fields.Integer(required=True)
-#     quantity = fields.Integer(required=True)
+# helps us process the products related to orders to make sure we 
+# are getting the product_id and quantity from the order data 
+class OrderProductSchema(ma.Schema):
+    product_id = fields.Integer(required=True)
+    quantity = fields.Integer(required=True)
 
-#     class Meta:
-#         fields = ("product_id", "quantity")
+    class Meta:
+        fields = ("product_id", "quantity")
 
 # Retrieving order with the id of id
 
@@ -66,10 +68,22 @@ class OrderSchema(ma.Schema):
     products = fields.List(fields.Nested(ProductSchema),required=True)
 
     class Meta:
-        fields = ("date", "expected_delivery_date", "customer_id", "products")
+        fields = ("id", "date", "expected_delivery_date", "customer_id", "products")
+
+class PlaceOrderSchema(ma.Schema):
+    id = fields.Integer(dump_only=True)
+    date = fields.Date(required=True)
+    expected_delivery_date = fields.Date(required=True)
+    customer_id = fields.Integer(required=True)
+    products = fields.List(fields.Nested(OrderProductSchema),required=True)
+
+    class Meta:
+        fields = ("id", "date", "expected_delivery_date", "customer_id", "products")
 
 order_schema = OrderSchema()
 orders_schema = OrderSchema(many=True)
+place_order_schema = PlaceOrderSchema()
+place_orders_schema = PlaceOrderSchema(many=True)
 
 class Customer(db.Model):
     __tablename__ = "Customers"
@@ -285,18 +299,29 @@ def restock_product():
 @app.route("/orders", methods=["POST"])
 def add_order():
     try:
-        order_data = order_schema.load(request.json)
+        order_data = place_order_schema.load(request.json)
     except ValidationError as err:
         return jsonify(err.messages), 400
     
+    # Creating the order
     new_order = Order(date=order_data["date"], customer_id=order_data["customer_id"], expected_delivery_date=order_data["expected_delivery_date"])
+    
+    # search for the product objects and add them to the order 
     for product in order_data["products"]:
         product_object = Product.query.get_or_404(product["product_id"])
+
+        # Check if the stock of the product is greater than the quantity you want 
+        # to add to the order 
         if product["quantity"] > product_object.stock_quantity:
             return jsonify({"error": f"Insufficient stock for product ID {product['product_id']}."}), 400
         print(product_object)
-        new_order.products.append(Order(product_id=product["product_id"], quantity=product["quantity"]))
+
+        # If the product exists, add it to the order 
+        # TODO: Fix append 
+        # new_order.products.append(Order(product_id=product["product_id"], quantity=product["quantity"]))
+        new_order.products.append(product_object)
         print("appended product object")
+
     print(new_order.products)
     db.session.add(new_order)
     db.session.commit()
