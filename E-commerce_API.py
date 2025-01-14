@@ -49,22 +49,21 @@ class ProductSchema(ma.Schema):
 product_schema = ProductSchema()
 products_schema = ProductSchema(many=True)
 
-class OrderProductSchema(ma.Schema):
-    product_id = fields.Integer(required=True)
-    quantity = fields.Integer(required=True)
+# class OrderProductSchema(ma.Schema):
+#     product_id = fields.Integer(required=True)
+#     quantity = fields.Integer(required=True)
 
-    class Meta:
-        fields = ("product_id", "quantity")
+#     class Meta:
+#         fields = ("product_id", "quantity")
 
-order_product_schema = OrderProductSchema()
-order_products_schema = OrderProductSchema(many=True)
+# Retrieving order with the id of id
 
 class OrderSchema(ma.Schema):
     id = fields.Integer(dump_only=True)
     date = fields.Date(required=True)
     expected_delivery_date = fields.Date(required=True)
     customer_id = fields.Integer(required=True)
-    products = fields.List(fields.Nested(OrderProductSchema),required=True)
+    products = fields.List(fields.Nested(ProductSchema),required=True)
 
     class Meta:
         fields = ("date", "expected_delivery_date", "customer_id", "products")
@@ -84,14 +83,6 @@ class Customer(db.Model):
 order_product = db.Table("OrderProduct", 
     db.Column("order_id", db.Integer, db.ForeignKey("Orders.id"), primary_key=True), 
     db.Column("product_id", db.Integer, db.ForeignKey("Products.id"), primary_key=True))
-
-# class Order(db.Model):
-#     __tablename__ = "Orders"
-#     id = db.Column(db.Integer, primary_key=True)
-#     date = db.Column(db.Date, nullable=False)
-#     expected_delivery_date = db.Column(db.Date, nullable=False)
-#     customer_id = db.Column(db.Integer, db.ForeignKey("Customers.id"))
-#     products = db.relationship("Product", secondary=order_product, backref=db.backref("orders_products"))
 
 class Order(db.Model): 
     __tablename__ = "Orders" 
@@ -245,15 +236,6 @@ def get_product(id):
         return product_schema.jsonify(product)
     except ValidationError as err:
         return jsonify(err.messages), 400
-    
-# Get all Products
-@app.route("/products", methods=["GET"])
-def get_products():
-    try:
-        products = Product.query.all()
-        return products_schema.jsonify(products)
-    except ValidationError as err:
-        return jsonify(err.messages), 400
 
 # Update Product
 @app.route("/products/<int:id>", methods=["PUT"])
@@ -278,6 +260,11 @@ def delete_product(id):
     db.session.commit()
     return jsonify({"MESSAGE": "Product removed successfully."}), 200
 
+# List Products
+@app.route("/products", methods=["GET"])
+def get_products():
+    products = Product.query.all()
+    return products_schema.jsonify(products)
 
 # View and Manage Product Stock Levels (Bonus)
 
@@ -295,43 +282,6 @@ def restock_product():
 # MARK: Orders
 
 # Place Order
-# @app.route("/orders", methods=["POST"])
-# def add_order():
-#     try:
-#         order_data = order_schema.load(request.json)
-#     except ValidationError as err:
-#         return jsonify({"error": "Validation failed", "details": err.messages}), 400
-    
-#     try:
-#         # Bulk fetch products
-#         product_ids = [product["product_id"] for product in order_data["products"]]
-#         products = Product.query.filter(Product.id.in_(product_ids)).all()
-#         if len(products) != len(product_ids):
-#             return jsonify({"error": "Some products were not found."}), 404
-
-#         # Check stock and create order
-#         new_order = Order(
-#             date=order_data["date"],
-#             customer_id=order_data["customer_id"],
-#             expected_delivery_date=order_data["expected_delivery_date"]
-#         )
-#         for product_data in order_data["products"]:
-#             product = next((p for p in products if p.id == product_data["product_id"]), None)
-#             if product_data["quantity"] > product.stock_quantity:
-#                 return jsonify({"error": f"Insufficient stock for product ID {product.id}"}), 400
-#             new_order.products.append(product)
-
-#         db.session.add(new_order)
-#         db.session.commit()
-
-#         return jsonify({
-#             "message": "Order added successfully",
-#             "order_id": new_order.id
-#         }), 201
-#     except Exception as e:
-#         db.session.rollback()
-#         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
-
 @app.route("/orders", methods=["POST"])
 def add_order():
     try:
@@ -352,7 +302,8 @@ def add_order():
     db.session.commit()
     return jsonify({"MESSAGE": "New order added successfully."}), 201
 
-# Retrieve Order
+
+# Retrieve All Orders
 @app.route("/orders", methods=["GET"])
 def get_orders():
     try:
@@ -361,9 +312,8 @@ def get_orders():
     except ValidationError as err:
         return jsonify(err.messages), 400
 
-
 # Retrieve Order
-# Retrieving order with the id of id 
+# Retrieving order with the id of id
 @app.route("/orders/<int:id>", methods=["GET"])
 def get_order(id):
     try:
