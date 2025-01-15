@@ -86,7 +86,7 @@ class PlaceOrderSchema(ma.Schema):
     date = fields.Date(required=True)
     expected_delivery_date = fields.Date(required=True)
     customer_id = fields.Integer(required=True)
-    products = fields.List(fields.Nested(OrderProductSchema),required=True)
+    products = fields.List(fields.Nested(PlaceOrderProductSchema),required=True)
 
     class Meta:
         fields = ("id", "date", "expected_delivery_date", "customer_id", "products")
@@ -359,31 +359,61 @@ def restock_product():
 #     db.session.commit()
 #     return jsonify({"MESSAGE": "New order added successfully."}), 201
 
+# @app.route("/orders", methods=["POST"])
+# def add_order():
+#     try:
+#         order_data = place_order_schema.load(request.json)
+#     except ValidationError as err:
+#         return jsonify(err.messages), 400
+    
+#     new_order = Order(date=order_data["date"], customer_id=order_data["customer_id"], expected_delivery_date=order_data["expected_delivery_date"])
+    
+#     for product in order_data["products"]:
+#         product_object = Product.query.get_or_404(product["product_id"])
+
+#         if product["quantity"] > product_object.stock_quantity:
+#             return jsonify({"error": f"Insufficient stock for product ID {product['product_id']}."}), 400
+        
+#         # Deduct stock
+#         product_object.stock_quantity -= product["quantity"]
+
+#         # Create OrderProduct entry
+#         order_product_entry = OrderProduct(order=new_order, product=product_object, quantity=product["quantity"])
+#         db.session.add(order_product_entry)
+    
+#     db.session.add(new_order)
+#     db.session.commit()
+#     return jsonify({"MESSAGE": "New order added successfully."}), 201
+
 @app.route("/orders", methods=["POST"])
 def add_order():
     try:
         order_data = place_order_schema.load(request.json)
+        print("Order Data:", order_data)
     except ValidationError as err:
+        print("Validation Error:", err.messages)
         return jsonify(err.messages), 400
-    
+
+    if not order_data["products"]:
+        return jsonify({"error": "Order must include at least one product."}), 400
+
     new_order = Order(date=order_data["date"], customer_id=order_data["customer_id"], expected_delivery_date=order_data["expected_delivery_date"])
-    
+
     for product in order_data["products"]:
         product_object = Product.query.get_or_404(product["product_id"])
 
         if product["quantity"] > product_object.stock_quantity:
             return jsonify({"error": f"Insufficient stock for product ID {product['product_id']}."}), 400
         
-        # Deduct stock
         product_object.stock_quantity -= product["quantity"]
 
-        # Create OrderProduct entry
         order_product_entry = OrderProduct(order=new_order, product=product_object, quantity=product["quantity"])
         db.session.add(order_product_entry)
-    
+
     db.session.add(new_order)
     db.session.commit()
     return jsonify({"MESSAGE": "New order added successfully."}), 201
+
 
 
 
