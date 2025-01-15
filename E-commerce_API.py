@@ -327,64 +327,6 @@ def restock_product():
 # Task 3: Order Processing
 # MARK: Orders
 
-# Place Order
-# @app.route("/orders", methods=["POST"])
-# def add_order():
-#     try:
-#         order_data = place_order_schema.load(request.json)
-#     except ValidationError as err:
-#         return jsonify(err.messages), 400
-    
-#     # Creating the order
-#     new_order = Order(date=order_data["date"], customer_id=order_data["customer_id"], expected_delivery_date=order_data["expected_delivery_date"])
-    
-#     # search for the product objects and add them to the order 
-#     for product in order_data["products"]:
-#         product_object = Product.query.get_or_404(product["product_id"])
-
-#         # Check if the stock of the product is greater than the quantity you want 
-#         # to add to the order 
-#         if product["quantity"] > product_object.stock_quantity:
-#             return jsonify({"error": f"Insufficient stock for product ID {product['product_id']}."}), 400
-#         print(product_object)
-
-#         # If the product exists, add it to the order 
-#         # TODO: Fix append 
-#         # new_order.products.append(Order(product_id=product["product_id"], quantity=product["quantity"]))
-#         new_order.products.append(product_object)
-#         print("appended product object")
-
-#     print(new_order.products)
-#     db.session.add(new_order)
-#     db.session.commit()
-#     return jsonify({"MESSAGE": "New order added successfully."}), 201
-
-# @app.route("/orders", methods=["POST"])
-# def add_order():
-#     try:
-#         order_data = place_order_schema.load(request.json)
-#     except ValidationError as err:
-#         return jsonify(err.messages), 400
-    
-#     new_order = Order(date=order_data["date"], customer_id=order_data["customer_id"], expected_delivery_date=order_data["expected_delivery_date"])
-    
-#     for product in order_data["products"]:
-#         product_object = Product.query.get_or_404(product["product_id"])
-
-#         if product["quantity"] > product_object.stock_quantity:
-#             return jsonify({"error": f"Insufficient stock for product ID {product['product_id']}."}), 400
-        
-#         # Deduct stock
-#         product_object.stock_quantity -= product["quantity"]
-
-#         # Create OrderProduct entry
-#         order_product_entry = OrderProduct(order=new_order, product=product_object, quantity=product["quantity"])
-#         db.session.add(order_product_entry)
-    
-#     db.session.add(new_order)
-#     db.session.commit()
-#     return jsonify({"MESSAGE": "New order added successfully."}), 201
-
 @app.route("/orders", methods=["POST"])
 def add_order():
     try:
