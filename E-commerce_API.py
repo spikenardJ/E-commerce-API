@@ -354,7 +354,7 @@ def add_order():
 
     db.session.add(new_order)
     db.session.commit()
-    return jsonify({"MESSAGE": "New order added successfully."}), 201
+    return jsonify({ "message": "New order added successfully.", "order_id": new_order.id }), 201
 
 
 
